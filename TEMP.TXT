@@ -1,0 +1,13 @@
+ALTER TABLE "ct_mausac"
+ADD CONSTRAINT "fk_ct_mausac1" FOREIGN KEY ("idms") REFERENCES public."mausac" ("idkt") on update cascade,
+ADD CONSTRAINT "fk_ct_mausac2" FOREIGN KEY ("idsp") REFERENCES public."sanpham" ("idsp") on update cascade;
+
+ALTER TABLE "donhang"
+ADD CONSTRAINT "fk_donhang1" FOREIGN KEY ("id") REFERENCES public."taikhoan" ("id") on update cascade;
+
+ALTER TABLE "giohang"
+ADD CONSTRAINT "fk_giohang1" FOREIGN KEY ("id") REFERENCES public."taikhoan" ("id") on update cascade;
+
+ALTER TABLE "sanpham"
+ADD CONSTRAINT "fk_sanpham1" FOREIGN KEY ("idnh") REFERENCES public."nhanhieu" ("idnh") on update cascade;
+

@@ -1,44 +1,45 @@
-const { pool } = require('../configs/connectDB')
+// const { pool } = require('../configs/connectDB')
+const db = require('../models/index')
+const sequelize = require('sequelize')
 let multerConfig = require('../configs/multerConfig');
 const { upload, delete1 } = require('../configs/uploadDrive')
-
-
 
 
 class controller {
     getAll = async (req, res) => {
 
         try {
-            const [data] = await pool.execute('SELECT IDNH, TENNHANHIEU, MOTA, HINH, TRANGTHAI FROM NHANHIEU')
+            let result = await db.NHANHIEU.findAll({
+                attributes: ['IDNH', 'TENNHANHIEU', 'MOTA', 'HINH'],
+                where: {
+                    TRANGTHAI: true
+                }
 
-            return res.status(200).json({
-                status: 200,
-                message: 'Successfully',
-                data: data
-            });
+            })
+            return res.json({
+                result
+            })
         }
         catch (error) {
             return res.status(500).json({
                 status: 500,
-                message: 'Unsuccess',
+                message: error.message,
             });
         }
 
     }
     getById = async (req, res) => {
         try {
-            const [data] = await pool.execute('SELECT IDNH, TENNHANHIEU, MOTA, HINH, TRANGTHAI FROM NHANHIEU WHERE IDNH = ?', [req.params.id])
-
-            if (data.length == 0) return res.status(404).json({
-                status: 404,
-                message: 'Not found',
+            let result = await db.NHANHIEU.findByPk(req.params.id, {
+                attributes: ['IDNH', 'TENNHANHIEU', 'MOTA', 'HINH', 'TRANGTHAI'],
+            })
+            if (!result) return res.json({
+                message: 'Not found'
             })
 
-            return res.status(200).json({
-                status: 200,
-                message: 'Success',
-                data: data
-            });
+            return res.json({
+                result
+            })
         }
         catch (error) {
             return res.status(500).json({
@@ -48,60 +49,13 @@ class controller {
         }
     }
     editById = async (req, res) => {
-        try {
-            await pool.execute('UPDATE NHANHIEU SET TENNHANHIEU = ?, MOTA = ?, HINHANH = ? WHERE IDNH = ?', [req.body.tennhanhieu, req.body.mota, req.body.hinhanh, req.params.id])
-            return res.status(200).json({
-                status: 200,
-                message: 'Success',
-            });
-        }
-        catch (error) {
-            return res.status(500).json({
-                status: 500,
-                message: 'Unsuccess',
-            });
-        }
-
-    }
-    disableById = async (req, res) => {
-        try {
-            await pool.execute('UPDATE NHANHIEU SET TRANGTHAI = 0 WHERE IDNH = ?', [req.params.id])
-            return res.status(200).json({
-                status: 200,
-                message: 'Success',
-            });
-        }
-        catch (error) {
-            return res.status(500).json({
-                status: 500,
-                message: 'Unsuccess',
-            });
-        }
-
-    }
-    deleteById = async (req, res) => {
-        try {
-            await pool.execute('DELETE FROM NHANHIEU WHERE IDNH = ?', [req.params.id])
-            const [data] = await pool.execute('DELETE FROM NHANHIEU WHERE IDNH = ?', [req.params.id])
-
-            return res.status(200).json({
-                status: 200,
-                message: 'Success',
-            });
-        }
-        catch (error) {
-            return res.status(500).json({
-                status: 500,
-                message: 'Unsuccess',
-            });
-        }
-
-
-    }
-    add = async (req, res) => {
 
         let uploadFile = multerConfig('images')
         uploadFile(req, res, async (error) => {
+            let { tennhanhieu, mota, trangthai } = req.body
+            if (!tennhanhieu || !mota || !trangthai || !req.file) return res.json({
+                message: 'Missing data'
+            })
             console.log(req.file);
             if (error) {
                 return res.status(440).json({
@@ -113,25 +67,118 @@ class controller {
 
             let idDrive = await upload(res, req.body.tennhanhieu)
             // console.log(id);
-            const hinhanh = `https://drive.google.com/uc?export=view&id=${idDrive}`
-            console.log(hinhanh);
+            const hinh = `https://drive.google.com/uc?export=view&id=${idDrive}`
 
-            // try {
+            try {
+                let result = await db.NHANHIEU.findByPk(req.params.id)
+                if (!result) return res.json({
+                    message: 'Not found'
+                })
 
-            //     await pool.execute(`INSERT INTO NHANHIEU(TENHANHIEU, MOTA, HINHANH, TRANGTHAI) values (?, ?, ?)`, [req.body.tennhanhieu, req.body.mota, hinhanh, 1])
-            //     return res.status(200).json({
-            //         status: 200,
-            //         message: 'Success',
-            //     });
-            // }
-            // catch (error) {
-            //     return res.status(500).json({
-            //         status: 500,
-            //         message: 'Unsuccess',
-            //     });
+                result.TENNHANHIEU = tennhanhieu
+                result.MOTA = mota
+                result.HINH = hinh
+                result.TRANGTHAI = trangthai
 
-            // }
+                await result.save()
 
+                return res.json({
+                    message: 'Update successfull'
+                })
+            } catch (error) {
+                return res.status(500).json({
+                    status: 500,
+                    message: 'Unsuccess',
+                });
+            }
+        })
+
+
+    }
+    disableById = async (req, res) => {
+        try {
+            let result = await db.NHANHIEU.findByPk(req.params.id)
+            if (!result) return res.json({
+                message: 'Not found'
+            })
+
+            result.TRANGTHAI = trangthai
+
+            await result.save()
+
+            return res.json({
+                message: 'Update successfull'
+            })
+        }
+        catch (error) {
+            return res.status(500).json({
+                status: 500,
+                message: 'Unsuccess',
+            });
+        }
+
+    }
+    deleteById = async (req, res) => {
+        try {
+            let result = await db.NHANHIEU.findByPk(req.params.id)
+            if (!result) return res.json({
+                message: 'Not found'
+            })
+
+
+
+            await result.destroy()
+
+            return res.json({
+                message: 'Delete successfull'
+            })
+        }
+        catch (error) {
+            return res.status(500).json({
+                status: 500,
+                message: 'Unsuccess',
+            });
+        }
+
+    }
+    add = async (req, res) => {
+        let uploadFile = multerConfig('images')
+        uploadFile(req, res, async (error) => {
+            let { tennhanhieu, mota, trangthai } = req.body
+            if (!tennhanhieu || !mota || !trangthai || !req.file) return res.json({
+                message: 'Missing data'
+            })
+            console.log(req.file);
+            if (error) {
+                return res.status(440).json({
+                    status: 400,
+                    message: error,
+
+                });
+            }
+
+            let idDrive = await upload(res, req.body.tennhanhieu)
+            // console.log(id);
+            const hinh = `https://drive.google.com/uc?export=view&id=${idDrive}`
+
+            try {
+                const nhanhieu = await db.NHANHIEU.create({
+                    TENNHANHIEU: tennhanhieu,
+                    MOTA: mota,
+                    HINH: hinh,
+                    TRANGTHAI: trangthai
+                })
+                return res.json({
+                    message: 'Create successfull'
+                })
+
+            } catch (error) {
+                console.log(error);
+                return res.status(500).json({
+                    status: 500,
+                    message: 'Unsuccess',
+                });
+            }
         })
     }
 }

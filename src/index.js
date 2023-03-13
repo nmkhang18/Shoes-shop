@@ -4,7 +4,7 @@ const morgan = require('morgan')
 const cors = require('cors')
 const bodyParser = require('body-parser')
 const cookieParser = require('cookie-parser')
-const db = require('./configs/connectDB')
+const connectDB = require('./configs/connectDB')
 require('dotenv').config()
 //app & port
 //==========================================================
@@ -36,12 +36,36 @@ const nguoidungRouter = require('./routes/nguoidung.route')
 //==========================================================
 app.use('/danhmuc', danhmucRouter)
 app.use('/nhanhieu', nhanhieuRouter)
-// app.use('/sanpham', sanphamRouter)
-// app.use('/donhang', donhangRouter)
+app.use('/sanpham', sanphamRouter)
+app.use('/donhang', donhangRouter)
 // app.use('/thongbao', thongbaoRouter)
 // app.use('/banner', bannerRouter)
 // app.use('/nguoidung', nguoidungRouter)
 //==========================================================
+
+app.get('/', async (req, res) => {
+    const db = require('./models/index')
+    const sequelize = require('sequelize')
+    let result = await db.SANPHAM.findAll({
+        include: {
+            model: db.CT_MAUSAC,
+            include: {
+                model: db.MAUSAC,
+                attributes: ['MAU'],
+                required: true
+            },
+            required: true
+
+        },
+        attributes: ['IDSP', 'TENSANPHAM'],
+    })
+
+    return res.json({
+        result
+    })
+
+})
+
 app.listen(port, () => {
     console.log(`Listening to port ${port}`);
 })

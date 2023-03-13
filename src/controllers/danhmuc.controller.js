@@ -1,41 +1,39 @@
-const { pool } = require('../configs/connectDB')
-
+// const { pool } = require('../configs/connectDB')
+const db = require('../models/index')
+const sequelize = require('sequelize')
 
 
 class controller {
     getAll = async (req, res) => {
 
         try {
-            const [data] = await pool.execute('SELECT IDDM, TENDANHMUC, MOTA, TRANGTHAI FROM DANHMUCSANPHAM')
-
-            return res.status(200).json({
-                status: 200,
-                message: 'Successfully',
-                data: data
-            });
+            let result = await db.DANHMUCSANPHAM.findAll({
+                attributes: ['IDDM', 'TENDANHMUC', 'MOTA', 'TRANGTHAI'],
+            })
+            return res.json({
+                result
+            })
         }
         catch (error) {
             return res.status(500).json({
                 status: 500,
-                message: 'Unsuccess',
+                message: error.message,
             });
         }
 
     }
     getById = async (req, res) => {
         try {
-            const [data] = await pool.execute('SELECT IDDM, TENDANHMUC, MOTA, TRANGTHAI FROM DANHMUCSANPHAM WHERE IDDM = ?', [req.params.id])
-
-            if (data.length == 0) return res.status(404).json({
-                status: 404,
-                message: 'Not found',
+            let result = await db.DANHMUCSANPHAM.findByPk(req.params.id, {
+                attributes: ['IDDM', 'TENDANHMUC', 'MOTA', 'TRANGTHAI'],
+            })
+            if (!result) return res.json({
+                message: 'Not found'
             })
 
-            return res.status(200).json({
-                status: 200,
-                message: 'Success',
-                data: data
-            });
+            return res.json({
+                result
+            })
         }
         catch (error) {
             return res.status(500).json({
@@ -45,12 +43,25 @@ class controller {
         }
     }
     editById = async (req, res) => {
+        let { tendanhmuc, mota, trangthai } = req.body
+        if (!tendanhmuc || !mota || !trangthai) return res.json({
+            message: 'Missing data'
+        })
         try {
-            await pool.execute('UPDATE DANHMUCSANPHAM SET TENDANHMUC = ?, MOTA = ? WHERE IDDM = ?', [req.body.tendanhmuc, req.body.mota, req.params.id])
-            return res.status(200).json({
-                status: 200,
-                message: 'Success',
-            });
+            let result = await db.DANHMUCSANPHAM.findByPk(req.params.id)
+            if (!result) return res.json({
+                message: 'Not found'
+            })
+
+            result.TENDANHMUC = tendanhmuc
+            result.MOTA = mota
+            result.TRANGTHAI = trangthai
+
+            await result.save()
+
+            return res.json({
+                message: 'Update successfull'
+            })
         }
         catch (error) {
             return res.status(500).json({
@@ -62,11 +73,18 @@ class controller {
     }
     disableById = async (req, res) => {
         try {
-            await pool.execute('UPDATE DANHMUCSANPHAM SET TRANGTHAI = 0 WHERE IDDM = ?', [req.params.id])
-            return res.status(200).json({
-                status: 200,
-                message: 'Success',
-            });
+            let result = await db.DANHMUCSANPHAM.findByPk(req.params.id)
+            if (!result) return res.json({
+                message: 'Not found'
+            })
+
+            result.TRANGTHAI = trangthai
+
+            await result.save()
+
+            return res.json({
+                message: 'Update successfull'
+            })
         }
         catch (error) {
             return res.status(500).json({
@@ -78,11 +96,18 @@ class controller {
     }
     deleteById = async (req, res) => {
         try {
-            await pool.execute('DELETE FROM DANHMUCSANPHAM WHERE IDDM = ?', [req.params.id])
-            return res.status(200).json({
-                status: 200,
-                message: 'Success',
-            });
+            let result = await db.DANHMUCSANPHAM.findByPk(req.params.id)
+            if (!result) return res.json({
+                message: 'Not found'
+            })
+
+
+
+            await result.destroy()
+
+            return res.json({
+                message: 'Delete successfull'
+            })
         }
         catch (error) {
             return res.status(500).json({
@@ -93,13 +118,20 @@ class controller {
 
     }
     add = async (req, res) => {
+        let { tendanhmuc, mota, trangthai } = req.body
+        if (!tendanhmuc || !mota || !trangthai) return res.json({
+            message: 'Missing data'
+        })
         try {
-            await pool.execute(`INSERT INTO DANHMUCSANPHAM(TENDANHMUC, MOTA, TRANGTHAI) values (?, ?, ?)`, [req.body.tendanhmuc, req.body.mota, 1])
+            const danhmuc = await db.DANHMUCSANPHAM.create({
+                TENDANHMUC: tendanhmuc,
+                MOTA: mota,
+                TRANGTHAI: trangthai
+            })
+            return res.json({
+                message: 'Create successfull'
+            })
 
-            return res.status(200).json({
-                status: 200,
-                message: 'Success',
-            });
         }
         catch (error) {
             return res.status(500).json({
